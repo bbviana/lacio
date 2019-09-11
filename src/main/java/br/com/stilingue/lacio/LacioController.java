@@ -2,6 +2,8 @@ package br.com.stilingue.lacio;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
+import java.util.LinkedHashSet;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,6 +26,19 @@ public class LacioController {
         return "Index";
     }
 
+    @RequestMapping(value = "/dominios/{palavra}", method = GET)
+    @ResponseBody
+    public LinkedHashSet<String> dominios(@PathVariable String palavra) {
+        return importService.dominios(palavra);
+    }
+
+    @RequestMapping(value = "/relacionadas/{dominio}/{palavra}", method = GET)
+    @ResponseBody
+    public LinkedHashSet<String> relacionadas(
+            @PathVariable String dominio,
+            @PathVariable String palavra) {
+        return importService.relacionadas(dominio, palavra);
+    }
 
     @RequestMapping(value = "/resumo/{palavra}", method = GET)
     @ResponseBody

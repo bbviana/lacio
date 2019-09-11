@@ -1,6 +1,7 @@
 package br.com.stilingue.lacio;
 
 import static br.com.stilingue.lacio.Measurement.logTime;
+import static java.lang.String.format;
 import static java.util.stream.Collectors.toCollection;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -16,6 +17,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 /**
@@ -27,10 +29,45 @@ public class ImportService {
     @Autowired
     private Logger log;
 
+
+    @Cacheable("dominios")
+    public LinkedHashSet<String> dominios(String nomePalavra) {
+        return logTime(() -> {
+            String url = "https://dicionariocriativo.com.br/analogico/" + nomePalavra;
+            Document document = silentConnect(url);
+            LinkedHashSet<String> dominios = document
+                    .select("#dominioConceitual li")
+                    .stream()
+                    .map(Element::text)
+                    .collect(toCollection(LinkedHashSet::new));
+
+            return dominios;
+        }, "dominio(%s)", nomePalavra);
+    }
+
+    @Cacheable("relacionadas")
+    public LinkedHashSet<String> relacionadas(String dominio, String nomePalavra) {
+        return logTime(() -> {
+            String url = format("https://dicionariocriativo.com.br/analogico/%s/substantivo/%s",
+                    nomePalavra, dominio);
+            Document document = silentConnect(url);
+
+            LinkedHashSet<String> relacionadas = document
+                    .select("#mainContent #contentList > li:first-child ul:not(.hiddenList) a")
+                    .stream()
+                    .map(Element::text)
+                    .map(String::trim)
+                    .filter(it -> !"".equals(it))
+                    .collect(toCollection(LinkedHashSet::new));
+
+            return relacionadas;
+        }, "relacionadas(%s, $s)", dominio, nomePalavra);
+    }
+
+    @Cacheable("palavras")
     public Palavra fetch(String nomePalavra) {
         return logTime(() -> {
             String url = "https://dicionariocriativo.com.br/" + nomePalavra;
-
             Document document = silentConnect(url);
 
             Element mainContent = document.selectFirst("#mainContent");
@@ -108,6 +145,7 @@ public class ImportService {
                 .stream()
                 // FIXME tratar unicode Pr\u00f3spero
                 .map(Element::text)
+                .sorted()
                 .collect(toCollection(LinkedHashSet::new));
     }
 
