@@ -26,18 +26,19 @@ public class LacioController {
         return "Index";
     }
 
-    @RequestMapping(value = "/dominios/{palavra}", method = GET)
+    @RequestMapping(value = "/dominios/{palavra}/{page}", method = GET)
     @ResponseBody
-    public LinkedHashSet<String> dominios(@PathVariable String palavra) {
-        return importService.dominios(palavra);
+    public LinkedHashSet<String> dominios(@PathVariable String palavra, @PathVariable int page) {
+        return importService.dominios(palavra, page);
     }
 
-    @RequestMapping(value = "/relacionadas/{dominio}/{palavra}", method = GET)
+    @RequestMapping(value = "/relacionadas/{dominio}/{palavra}/{page}", method = GET)
     @ResponseBody
     public LinkedHashSet<String> relacionadas(
             @PathVariable String dominio,
-            @PathVariable String palavra) {
-        return importService.relacionadas(dominio, palavra);
+            @PathVariable String palavra,
+            @PathVariable int page) {
+        return importService.relacionadas(dominio, palavra, page);
     }
 
     @RequestMapping(value = "/resumo/{palavra}", method = GET)

@@ -17,6 +17,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -24,14 +25,20 @@ import org.springframework.stereotype.Service;
  * @author bbviana
  */
 @Service
-public class ImportService {
+class ImportService {
 
     @Autowired
     private Logger log;
 
+    @Value("${import.result.limit}")
+    private int resultLimit;
 
+
+    /**
+     * @param page 1-based
+     */
     @Cacheable("dominios")
-    public LinkedHashSet<String> dominios(String nomePalavra) {
+    LinkedHashSet<String> dominios(String nomePalavra, int page) {
         return logTime(() -> {
             String url = "https://dicionariocriativo.com.br/analogico/" + nomePalavra;
             Document document = silentConnect(url);
@@ -39,25 +46,31 @@ public class ImportService {
                     .select("#dominioConceitual li")
                     .stream()
                     .map(Element::text)
+                    .skip((page - 1) * resultLimit)
+                    .limit(resultLimit)
                     .collect(toCollection(LinkedHashSet::new));
 
             return dominios;
         }, "dominio(%s)", nomePalavra);
     }
 
+
     @Cacheable("relacionadas")
-    public LinkedHashSet<String> relacionadas(String dominio, String nomePalavra) {
+    LinkedHashSet<String> relacionadas(String dominio, String nomePalavra, int page) {
         return logTime(() -> {
             String url = format("https://dicionariocriativo.com.br/analogico/%s/substantivo/%s",
                     nomePalavra, dominio);
             Document document = silentConnect(url);
 
             LinkedHashSet<String> relacionadas = document
-                    .select("#mainContent #contentList > li:first-child ul:not(.hiddenList) a")
+                    .select("#mainContent #contentList ul:not(.loadmore) a")
                     .stream()
                     .map(Element::text)
                     .map(String::trim)
                     .filter(it -> !"".equals(it))
+                    .filter(it -> it.length() > 1)
+                    .skip((page - 1) * resultLimit)
+                    .limit(resultLimit)
                     .collect(toCollection(LinkedHashSet::new));
 
             return relacionadas;
@@ -65,7 +78,7 @@ public class ImportService {
     }
 
     @Cacheable("palavras")
-    public Palavra fetch(String nomePalavra) {
+    Palavra fetch(String nomePalavra) {
         return logTime(() -> {
             String url = "https://dicionariocriativo.com.br/" + nomePalavra;
             Document document = silentConnect(url);
@@ -173,7 +186,6 @@ public class ImportService {
                 .collect(toSet());
     }
 
-    // FIXME cache
     private static Document silentConnect(String url) {
         return logTime(() -> {
             try {
