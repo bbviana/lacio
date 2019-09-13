@@ -1,4 +1,4 @@
-package br.com.stilingue.lacio;
+package br.com.stilingue.lacio.resumo;
 
 import java.io.Serializable;
 import java.util.LinkedHashSet;
@@ -30,7 +30,7 @@ public class Palavra implements Serializable {
 
     private Set<Citacao> citacoes;
 
-    Palavra(String nome) {
+    public Palavra(String nome) {
         this.nome = nome;
     }
 

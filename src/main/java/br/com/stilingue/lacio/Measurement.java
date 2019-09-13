@@ -5,6 +5,8 @@ import static java.lang.String.format;
 import java.util.function.Supplier;
 
 /**
+ * Poderia ser um Spring Decorator. Seria menos intrusivo.
+ *
  * @author bbviana
  */
 public class Measurement {

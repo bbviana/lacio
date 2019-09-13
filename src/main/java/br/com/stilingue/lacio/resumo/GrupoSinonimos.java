@@ -1,4 +1,4 @@
-package br.com.stilingue.lacio;
+package br.com.stilingue.lacio.resumo;
 
 import java.io.Serializable;
 import java.util.Set;
