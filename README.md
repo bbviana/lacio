@@ -40,10 +40,12 @@ Jsoup eu já utilizei em muitas soluções e é uma das bibliotecas mais bem doc
 Outra escolha segura.
 
 Optei por não usar um banco de dados para deixar a solução mais simples e dado que alta disponibilidade não
-era um requisito. Também não era requisito alto desempenho, então o ônus de ter maior latência para acessar um fonte externa não foi problema.  
+era um requisito. Também não era requisito alto desempenho, então o ônus de ter maior latência para acessar um fonte externa não foi problema.   
+De toda forma, usamos um cache em memória (Spring cache)  para garantir um mínimo de desempenho.  
 Aqui, usamos duas fontes:
 - dicionariocriativo.com.br: acesso, parse e navegação via JSoup
 - Google Dictionary API: acesso via JSoup, navegação e parse via Groovy.
+
 
 Groovy também é uma linguagem que tenho certo domínio e é excelente para fazer parse de JSON. Nenhuma biblioteca Java que conheço 
 traz tamanha praticidade. Como a nacessidade de utilizá-la veio no meio do projeto, não a utilizei desde o início. Então quase
@@ -124,7 +126,44 @@ Claro, não é uma tarefa simples relacionar palavras dentro de um contexto. Afi
 são uma empresa com várias pessoas que fazem isso =).  
 Depois de tentar soluções triviais (usar o Google como fonte por ex), desisti e implementei algo simples.  
 
-(continua)
+Parti da seguinte premissa: o texto do significado provavelmente contém palavras que estão relacionadas à palavra desejada
+dentro de um domínio conceitual.
+
+Por ex: um dos significados para terra:
+
+> **Astronomia** planeta do sistema solar, o terceiro quanto à proximidade do **Sol**, habitado pelo homem ☞ inicial maiúsc.
+
+Pelo dicionariocriativo, dentro de Astronomia, temos relacionados a terra:
+sol, astronomia, que estão na descrição acima.
+
+A ideia então é comparar TODOS os domínios conceituais de terra (astronomia, região, fíisica etc), analisar
+quais palavras dão match e atribuir um score. E então exibir os significados de maior score primeiro.   
+Essa abordagem foi promissora para alguns termos, mas trouxe muitos falsos positivos.  
+Precisaria de mais refinamento: podar alguns termos por ex (preposições, conjunções etc).
+
+Uma abordagem mais complexa seria também analisar sinônimos. Por ex, globo é uma palavra relacionada a terra em astronomia.
+E planeta é sinônimo de globo (segundo https://dicionariocriativo.com.br/sinonimos-e-antonimos/globo). Então poderíamos contabilizá-la também.
+No entanto, sinônimos também precisam de um contexto. Teríamos que inferir que globo é sinônimo de planeta dentro do conceito astronomia.
+
+Tentamos ainda mais uma técnica de inferência: similaridade.  
+planeta não aperece como palavras relacionadas a terra, mas planetografia aparece. A ideia então seria usar um algoritmo que dissesse 
+que planetografia tem chances de se referir a planeta e que poderíamos contabilizar também. Os algortimos mais simples não trouxeram bons resultados.
+Testamos Algoritmo de Fuzzy e de Levenshtein: também pareciam promissores, mas precisaríamos de mais refinamento.
+
+No fim, optamos por algo simples. Comparar apenas os subjects dos significados.   
+Ao invocar a api do Google para terra, ela retorna dentre sesus significados:  
+
+> ASTRONOMIA  
+> planeta do sistema solar, o terceiro quanto à proximidade do Sol, habitado pelo homem ☞ inicial maiúsc.
+
+"ASTRONOMIA" é o que ela denomina como "subject", que é muito próximo do que dicionariocriativo classifica como domínio conceitual.  
+Em vez de comprara o texto todo, comparamos somente so subjects. Quando encontramos um match, é muito provável
+que aquele seja o significado desejado. O problema é que é limitado. Muitos significados vêm sem subjects.   
+
+
+
+ 
+ 
 
    
 
